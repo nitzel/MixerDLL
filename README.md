@@ -1,15 +1,17 @@
 MixerDLL
 ========
+Change program volumes separately.
+
 
 WASAPI Audio Mixer Simplification DLL for Volume Management of Sessions
 
 What is MixerDLL?
 --------
-It is kind of a wrapper-dll, enabling the use of WASAPI without digging into it too deep.
+It is kind of a wrapper-dll, enabling the use of WASAPIs Session Volume Management without digging into it too deep.
 It was created when we were building a hardware-mixer like the windows audio mixer that could change the volumes of sessions (different programs) separately.
 For fast testing we wanted to do it via Python, but could not find a way to access the sessions' volume.
 So I went through Microsofts Documentation and this is what came out of the effort:
-Some messy code, hopefully working without any memory leaks. But since I think someone could use it, too - I want to share it with you.
+Some messy code, hopefully working without any memory leaks. But I think someone else could use it - I want to share it with you.
 
 Implemented functionality
 -----
