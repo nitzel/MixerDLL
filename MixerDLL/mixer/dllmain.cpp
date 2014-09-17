@@ -39,13 +39,14 @@ HANDLE hSerial;
 #define ERRMSG_GETPROCESSINFO_FAILED "Get info about process failed"
 
 
-// Deklarationen
+/// functions
+//	stuff
 DLL char * version();
 DLL void initAudio(); // call before using other audio functions!
 DLL void exitAudio(); // call before exit
 DLL char * getErrorMessage();
 
-// strings...
+//	strings...
 DLL int getSessionCount();
 DLL DWORD getSessionPID(const int sessionId);
 DLL char * getSessionName(const int sessionId);
@@ -53,12 +54,12 @@ DLL char * getSessionTitle(const int sessionId);
 DLL char * getPIDName (DWORD);
 DLL char * getPIDTitle (DWORD);
 
-// mute
+//	mute
 DLL bool setSessionMute(const int sessionId, const bool mute);
 DLL bool getSessionMute(const int sessionId);
 DLL bool setMasterMute(const bool mute);
 DLL bool getMasterMute();
-// volume
+// 	volume
 DLL bool setSessionVolume(const int sessionId, const float volume);
 DLL float getSessionVolume(const int sessionId);
 DLL bool setMasterVolume(const float volume);
@@ -67,7 +68,7 @@ DLL void printAudioInfo();
 char * StringToCharP(String^ S);
 
 
-// Definitionen
+/// implementations
 
 char * version()
 {
