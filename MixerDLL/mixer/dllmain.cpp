@@ -19,13 +19,12 @@ using namespace System::Diagnostics;
 using namespace System::ComponentModel;
 
 
-#define VERSION "2014-09-17-0044j"
+#define VERSION "2015-06-02-0044j"
 
 #define DLL extern "C" __declspec(dllexport)
 
-CComPtr<IAudioEndpointVolume> pEpVol; // global volume
+CComPtr<IAudioEndpointVolume> pEpVol;					  // global volume
 CComPtr<IAudioSessionEnumerator> pAudioSessionEnumerator; // to go through sessions (local volume) 
-//CComPtr<IAudioSessionManager2> pAudioSessionManager2; // get enumerator
 HANDLE hSerial;
 
 // ErrorMessages
@@ -41,18 +40,18 @@ HANDLE hSerial;
 
 /// functions
 //	stuff
-DLL char * version();
+DLL char* version();
 DLL void initAudio(); // call before using other audio functions!
 DLL void exitAudio(); // call before exit
-DLL char * getErrorMessage();
+DLL char* getErrorMessage();
 
 //	strings...
 DLL int getSessionCount();
 DLL DWORD getSessionPID(const int sessionId);
-DLL char * getSessionName(const int sessionId);
-DLL char * getSessionTitle(const int sessionId);
-DLL char * getPIDName (DWORD);
-DLL char * getPIDTitle (DWORD);
+DLL char* getSessionName(const int sessionId);
+DLL char* getSessionTitle(const int sessionId);
+DLL char* getPIDName(DWORD);
+DLL char* getPIDTitle(DWORD);
 
 //	mute
 DLL bool setSessionMute(const int sessionId, const bool mute);
@@ -65,13 +64,12 @@ DLL float getSessionVolume(const int sessionId);
 DLL bool setMasterVolume(const float volume);
 DLL float getMasterVolume();
 DLL void printAudioInfo();
-char * StringToCharP(String^ S);
+char* StringToCharP(String^ S);
 
 
 /// implementations
 
-char * version()
-{
+char* version(){
 	return VERSION;
 }
 
@@ -93,8 +91,8 @@ void initAudio(){
 	pAudioSessionManager2->GetSessionEnumerator(&pAudioSessionEnumerator);
 }
 
-char * errorMessage = NULL;
-char * getErrorMessage(){
+char* errorMessage = NULL;
+char* getErrorMessage(){
 	return errorMessage;
 }
 int getSessionCount(){
@@ -250,22 +248,22 @@ DWORD getSessionPID(const int sessionId){
 	pSC2->GetProcessId(&procid);
 	return procid;
 }
-char * getSessionName(const int sessionId){
+char* getSessionName(const int sessionId){
 	if( sessionId == -1)
 		return "master";
 	DWORD pid = getSessionPID(sessionId);
 
 	return getPIDName(pid);
 }
-char * getSessionTitle(const int sessionId){
+char* getSessionTitle(const int sessionId){
 	if( sessionId == -1)
 		return "master";
 	DWORD pid = getSessionPID(sessionId);
 
 	return getPIDTitle(pid);
 }
-char * getPIDName_cstr = NULL;
-char * getPIDName (DWORD procid){
+char* getPIDName_cstr = NULL;
+char* getPIDName (DWORD procid){
 	String^ procname;
 	
 	try{
@@ -279,8 +277,8 @@ char * getPIDName (DWORD procid){
 	getPIDName_cstr = StringToCharP(procname);
 	return getPIDName_cstr;
 }
-char * getPIDTitle_cstr = NULL;
-char * getPIDTitle (DWORD procid){
+char* getPIDTitle_cstr = NULL;
+char* getPIDTitle (DWORD procid){
 	String^ title;
 	
 	try{
@@ -383,9 +381,9 @@ void exitAudio(){
 /**
 Important: Creates a buffer and returns pointer to it. you need to delete that buffer yourself!
 */
-char * StringToCharP(String^ S){ 
+char* StringToCharP(String^ S){ 
 	char *cstr = new char[S->Length + 1];
-	for (int i=0;i<S->Length; i++)
+	for (int i=0; i<S->Length; i++)
 	  cstr[i]=(char)S[i];
 	cstr[S->Length]=0; // zero-terminated
 	return cstr;
