@@ -91,10 +91,6 @@ void initAudio(){
 	pDevice->Activate(__uuidof(IAudioEndpointVolume), CLSCTX_ALL, NULL, (VOID**)&pEpVol);
 	// get Audio Session Enumerator
 	pAudioSessionManager2->GetSessionEnumerator(&pAudioSessionEnumerator);
-	
-	pDevice.Release();
-	pDeviceEnumerator.Release();
-	pAudioSessionManager2.Release();
 }
 
 char * errorMessage = NULL;
