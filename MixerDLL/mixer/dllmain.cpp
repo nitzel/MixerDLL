@@ -1,32 +1,35 @@
 #pragma once
 
+#include <windows.h>
+#include <VersionHelpers.h>
 #include <stdio.h>
 #include <tchar.h>
 #include <windows.h>
-#define _ATL_CSTRING_EXPLICIT_CONSTRUCTORS      // some CString constructors will be explicit
 #include <atlbase.h>
 #include <atlstr.h>
 
-#include <conio.h> // getch()
+#include <conio.h> 
 #include <mmdeviceapi.h>
 #include <audiopolicy.h>
 #include <endpointvolume.h>
 
-// getting window caption
-#using <System.dll>
-using namespace System;
-using namespace System::Diagnostics;
-using namespace System::ComponentModel;
+#include "Psapi.h"  
+#pragma comment (lib,"Psapi.lib")  
+#pragma comment(lib, "Ntdll.lib")
 
 
-#define VERSION "2014-09-17-0044j"
 
-#define DLL extern "C" __declspec(dllexport)
+#define MIXER_DLL extern "C" __declspec(dllexport) 
 
-CComPtr<IAudioEndpointVolume> pEpVol; // global volume
+CComPtr<IAudioEndpointVolume> pEpVol;					  // global volume
 CComPtr<IAudioSessionEnumerator> pAudioSessionEnumerator; // to go through sessions (local volume) 
-//CComPtr<IAudioSessionManager2> pAudioSessionManager2; // get enumerator
-HANDLE hSerial;
+
+
+// filename
+static const char VERSION[] = "2015-06-02-0044j";
+static char g_pidName[MAX_PATH + 1] = { 0 };
+static char g_pidTitle[MAX_PATH + 1] = { 0 };
+
 
 // ErrorMessages
 #define ERRMSG_OK "OK"
@@ -37,45 +40,42 @@ HANDLE hSerial;
 #define ERRMSG_SESSIONCONTROL2_INIT_FAILED "SessionControl2 Init failed"
 #define ERRMSG_AUDIOVOLUME_INIT_FAILED "ISimpleAudioVolume Init failed"
 #define ERRMSG_GETPROCESSINFO_FAILED "Get info about process failed"
+#define ERRMSG_SYSTEM_NOT_SUPORTED "Minimum supported client : vista "
 
 
 /// functions
 //	stuff
-DLL char * version();
-DLL void initAudio(); // call before using other audio functions!
-DLL void exitAudio(); // call before exit
-DLL char * getErrorMessage();
+MIXER_DLL const char* version();
+MIXER_DLL bool initAudio(); // call before using other audio functions!
+MIXER_DLL void exitAudio(); // call before exit
+MIXER_DLL char* getErrorMessage();
 
 //	strings...
-DLL int getSessionCount();
-DLL DWORD getSessionPID(const int sessionId);
-DLL char * getSessionName(const int sessionId);
-DLL char * getSessionTitle(const int sessionId);
-DLL char * getPIDName (DWORD);
-DLL char * getPIDTitle (DWORD);
+MIXER_DLL int getSessionID();
+MIXER_DLL DWORD getSessionPID(const int sessionId);
+MIXER_DLL const char* getSessionName(const int sessionId);
+MIXER_DLL const char* getSessionTitle(const int sessionId);
+MIXER_DLL const char* getPIDName(DWORD);
+MIXER_DLL const char* getPIDTitle(DWORD);
 
 //	mute
-DLL bool setSessionMute(const int sessionId, const bool mute);
-DLL bool getSessionMute(const int sessionId);
-DLL bool setMasterMute(const bool mute);
-DLL bool getMasterMute();
+MIXER_DLL bool setSessionMute(const int sessionId, const bool mute);
+MIXER_DLL bool getSessionMute(const int sessionId);
+MIXER_DLL bool setMasterMute(const bool mute);
+MIXER_DLL bool getMasterMute();
 // 	volume
-DLL bool setSessionVolume(const int sessionId, const float volume);
-DLL float getSessionVolume(const int sessionId);
-DLL bool setMasterVolume(const float volume);
-DLL float getMasterVolume();
-DLL void printAudioInfo();
-char * StringToCharP(String^ S);
-
-
+MIXER_DLL bool setSessionVolume(const int sessionId, const float volume);
+MIXER_DLL float getSessionVolume(const int sessionId);
+MIXER_DLL bool setMasterVolume(const float volume);
+MIXER_DLL float getMasterVolume();
+MIXER_DLL void printAudioInfo();
 /// implementations
-
-char * version()
-{
+const char* version(){
 	return VERSION;
 }
 
-void initAudio(){
+bool initAudio(){
+	if (!IsWindowsVistaOrGreater()) return false;
 	CComPtr<IMMDevice> pDevice; // get Mgr & EndpointVolume
 	CComPtr<IMMDeviceEnumerator> pDeviceEnumerator; // select output device
 	CComPtr<IAudioSessionManager2> pAudioSessionManager2; // get enumerator
@@ -91,17 +91,15 @@ void initAudio(){
 	pDevice->Activate(__uuidof(IAudioEndpointVolume), CLSCTX_ALL, NULL, (VOID**)&pEpVol);
 	// get Audio Session Enumerator
 	pAudioSessionManager2->GetSessionEnumerator(&pAudioSessionEnumerator);
-	
-	pDevice.Release();
-	pDeviceEnumerator.Release();
-	pAudioSessionManager2.Release();
+
+	return true;
 }
 
-char * errorMessage = NULL;
-char * getErrorMessage(){
+char* errorMessage = NULL;
+char* getErrorMessage(){
 	return errorMessage;
 }
-int getSessionCount(){
+int getSessionID(){
 	int sessionCount = 0;
 	exitAudio();
 	initAudio();
@@ -113,7 +111,7 @@ int getSessionCount(){
  * Find out if a session is muted. -1 -> Master
  */
 bool getSessionMute(const int sessionId){
-	int sessionCount = getSessionCount();
+	int sessionCount = getSessionID();
 	if (sessionId == -1)
 		return getMasterMute();
 	if (sessionId >= sessionCount || sessionId < 0) {
@@ -141,7 +139,7 @@ bool getSessionMute(const int sessionId){
  Mutes/Unmutes a session. If sessionId=-1, info about master
  */
 bool setSessionMute(const int sessionId, const bool mute){
-	int sessionCount = getSessionCount();
+	int sessionCount = getSessionID();
 	if (sessionId == -1)
 		return setMasterMute(mute);
 	if (sessionId >= sessionCount || sessionId < 0) {
@@ -169,7 +167,7 @@ bool setSessionMute(const int sessionId, const bool mute){
  Sets volume of sessionId. If sessionId=-1, sets Master Volume
  */
 bool setSessionVolume(const int sessionId, const float volume){
-	int sessionCount = getSessionCount();
+	int sessionCount = getSessionID();
 	if (sessionId == -1)
 		return setMasterVolume(volume);
 	if (sessionId >= sessionCount || sessionId < 0) {
@@ -202,7 +200,7 @@ bool setSessionVolume(const int sessionId, const float volume){
 float getSessionVolume(const int sessionId){
 	CComPtr<IAudioSessionControl> pSessionControl;
 	CComPtr<ISimpleAudioVolume> pSAV;
-	int sessionCount = getSessionCount();
+	int sessionCount = getSessionID();
 	float vol; 
 	if (sessionId == -1)
 		return getMasterVolume();
@@ -234,7 +232,7 @@ float getSessionVolume(const int sessionId){
 DWORD getSessionPID(const int sessionId){
 	CComPtr<IAudioSessionControl> pSessionControl;
 	CComPtr<IAudioSessionControl2> pSC2;
-	int sessionCount = getSessionCount();
+	int sessionCount = getSessionID();
 	if (sessionId >= sessionCount || sessionId < 0) { 
 		errorMessage = ERRMSG_UNDEFINEDSESSIONID;
 		return NULL;
@@ -254,65 +252,74 @@ DWORD getSessionPID(const int sessionId){
 	pSC2->GetProcessId(&procid);
 	return procid;
 }
-char * getSessionName(const int sessionId){
+const char* getSessionName(const int sessionId){
 	if( sessionId == -1)
 		return "master";
 	DWORD pid = getSessionPID(sessionId);
 
 	return getPIDName(pid);
 }
-char * getSessionTitle(const int sessionId){
+const char* getSessionTitle(const int sessionId){
 	if( sessionId == -1)
 		return "master";
 	DWORD pid = getSessionPID(sessionId);
 
 	return getPIDTitle(pid);
 }
-char * getPIDName_cstr = NULL;
-char * getPIDName (DWORD procid){
-	String^ procname;
-	
-	try{
-		Process^ proc = Process::GetProcessById(procid);
-		procname = proc->ProcessName;
-	} catch(Exception^ e){ e;
-		errorMessage = ERRMSG_GETPROCESSINFO_FAILED;
-		return NULL;
-	}
-	if(getPIDName_cstr) delete [] getPIDName_cstr;
-	getPIDName_cstr = StringToCharP(procname);
-	return getPIDName_cstr;
+const char* getPIDName(DWORD procid){
+	char path[_MAX_PATH + 1] = "";
+	memset(g_pidName, 0, MAX_PATH);
+
+	HANDLE h_Process = OpenProcess(PROCESS_QUERY_INFORMATION | PROCESS_VM_READ, FALSE, procid);
+	if (!h_Process) return g_pidName;
+
+	GetModuleFileNameExA(h_Process, NULL, path, MAX_PATH + 1);
+
+	char* pidName = PathFindFileNameA(path);
+
+	strcpy(g_pidName, pidName);
+	return g_pidName;
 }
-char * getPIDTitle_cstr = NULL;
-char * getPIDTitle (DWORD procid){
-	String^ title;
-	
-	try{
-		Process^ proc = Process::GetProcessById(procid);
-		title = proc->MainWindowTitle;
-	} catch(Exception^ e){ e;
-		errorMessage = ERRMSG_GETPROCESSINFO_FAILED;
-		return NULL;
+
+
+BOOL CALLBACK EnumWindowsProc(HWND hwnd, LPARAM lParam)
+{
+	DWORD pid = *((DWORD*)(lParam));
+
+	DWORD enumPid = 0;
+	GetWindowThreadProcessId(hwnd, &enumPid);
+
+	if (pid == enumPid)
+	{
+		GetWindowTextA(hwnd, g_pidTitle, MAX_PATH);
+		return FALSE;
 	}
-	if(getPIDTitle_cstr) delete [] getPIDTitle_cstr;
-	getPIDTitle_cstr = StringToCharP(title);
-	return getPIDTitle_cstr;
+	else
+	{
+		return TRUE;
+	}
+}
+
+const char* getPIDTitle (DWORD procid){
+	memset(g_pidTitle, 0, MAX_PATH);
+	EnumWindows(EnumWindowsProc, (LPARAM)&procid);
+	return g_pidTitle;
 }
 
 void printAudioInfo(){
-	int sessionCount = getSessionCount();
+	int sessionCount = getSessionID();
 	printf("\n\n\n\n\n\n\n\n");
 	printf("################################################################################");
 	printf("     Audio Sessions \n");
 	printf("################################################################################");
 	printf("[id] PID  - %-10s - %-50s\n","process","Main-Window Title");
 	printf("--------------------------------------------------------------------------------");
-	for (int i = 0; i < sessionCount; i++){
+	for (int sessionID(0); sessionID < sessionCount; sessionID++){
 		CComPtr<IAudioSessionControl> pSessionControl;
 		CComPtr<ISimpleAudioVolume> pSAV;
 		CComPtr<IAudioSessionControl2> pSC2;
 		// Get SessionControl
-		if (FAILED(pAudioSessionEnumerator->GetSession(i, &pSessionControl)))
+		if (FAILED(pAudioSessionEnumerator->GetSession(sessionID, &pSessionControl)))
 			continue;
 		// Ask for SimpleAudioVolume
 		if (FAILED(pSessionControl->QueryInterface(__uuidof(ISimpleAudioVolume), (VOID**)&pSAV)))
@@ -321,9 +328,7 @@ void printAudioInfo(){
 		if (FAILED(pSessionControl->QueryInterface(__uuidof(IAudioSessionControl2), (VOID**)&pSC2)))
 			continue;
 		LPWSTR name1,name2,icon;
-		DWORD procid;
-		String^ title;
-		String^ procname;
+		DWORD procid(0);
 		float vol = 0;
 		
 		pSessionControl->GetDisplayName(&name1);
@@ -331,24 +336,16 @@ void printAudioInfo(){
 		pSC2->GetSessionIdentifier(&name2);
 		pSC2->GetProcessId(&procid);
 		
-		try{
-			Process^ proc = Process::GetProcessById(procid);
-			title = proc->MainWindowTitle;
-			procname = proc->ProcessName;
-		} catch(Exception^ e){
-			e;
-			printf("[%.2d]% 5d - %-10s - %-45s\n",i,procid,"invalid","invalid session");
-			CoTaskMemFree(name1); // TODO: to be done better :/
-			CoTaskMemFree(name2);
-			CoTaskMemFree(icon);
-			continue;
-		}
+		procid = getSessionPID(sessionID);
+		getPIDName(procid);
+		getPIDTitle(procid);
+
 		pSAV->GetMasterVolume(&vol);
 //		printf("Session[%d] Vol[%.2f]\nDisplayName: %ls\nSessionIdentifier: %ls\nProcessId: %d\nMainWindowTitle: %s\nProcessName: %s\nIconPath: %s\n\n", i, vol, name1, name2, procid, title, procname, icon);
 //		printf("Session[%d] Vol[%.2f]\nDisplayName: %ls\nProcessId: %d\nMainWindowTitle: %s\nProcessName: %s\nIconPath: %s\n\n", i, vol, name1, procid, title, procname, icon);
 
 		//18+name+laststring
-		printf("[% 2d]% 5d - %-10.10s - %-50.50s\n",i,procid,procname,title);
+		printf("[% 2d]% 5d - %-10.10s - %-50.50s\n", sessionID, procid, g_pidName, g_pidTitle);
 
 		CoTaskMemFree(name1); // TODO: to be done better :/
 		CoTaskMemFree(name2);
@@ -382,15 +379,4 @@ void exitAudio(){
 	pEpVol.Release();
 	pAudioSessionEnumerator.Release();
 	CoUninitialize();
-}
-
-/**
-Important: Creates a buffer and returns pointer to it. you need to delete that buffer yourself!
-*/
-char * StringToCharP(String^ S){ 
-	char *cstr = new char[S->Length + 1];
-	for (int i=0;i<S->Length; i++)
-	  cstr[i]=(char)S[i];
-	cstr[S->Length]=0; // zero-terminated
-	return cstr;
 }
